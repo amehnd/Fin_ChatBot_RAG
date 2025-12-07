@@ -1,35 +1,34 @@
-# Fin_ChatBot_RAG 🤖📊
+# FinAgent: Financial RAG Chatbot 🤖📊
 
-A Retrieval-Augmented Generation (RAG) chatbot designed to analyze financial documents. This application allows users to chat with an **Annual Report** (or any PDF) to extract insights, summarize key metrics, and answer specific questions about the company's financial health.
+A Retrieval-Augmented Generation (RAG) chatbot designed to analyze financial documents. This application allows users to chat with **Annual Reports** (or any PDF) to extract insights, summarize key metrics, and answer specific questions about a company's financial health.
 
 ## 🚀 Overview
 
-This project solves the problem of manually sifting through dense financial PDFs. By leveraging an LLM with RAG, the bot retrieves the exact context needed from the `annual_report.pdf` to answer questions, ensuring responses are grounded in the actual data provided.
+This project solves the problem of manually sifting through dense financial PDFs. By leveraging an Open Source LLM (Llama 3) with RAG, the bot retrieves the exact context needed from the uploaded documents to answer questions, ensuring responses are grounded in the actual data provided.
 
 ### Key Features
-- **Document Ingestion:** Automatically loads and processes the `annual_report.pdf`.
-- **Semantic Search:** Uses vector embeddings to find relevant sections of the report based on user queries.
-- **Context-Aware Answers:** Generates responses referencing specific details from the text (Revenue, EBITDA, Risks, etc.).
-- **Interactive UI:** Simple web interface (via Streamlit) for real-time Q&A.
+- **Document Ingestion:** Instantly processes PDF Annual Reports uploaded via the secure sidebar.
+- **Semantic Search:** Uses local vector embeddings (FAISS) to find relevant sections of the report based on user queries.
+- **Context-Aware Answers:** Generates responses referencing specific details (Revenue, EBITDA, Risks) with **page citations**.
+- **Interactive UI:** A streamlined web interface built with Streamlit for real-time Q&A.
 
 ## 🛠️ Tech Stack
 
-* **Language:** Python 3.9+
+* **Language:** Python 3.10+
 * **Interface:** Streamlit
 * **Orchestration:** LangChain
-* **Vector Store:** FAISS / ChromaDB (Local vector storage)
-* **Embeddings:** OpenAI Embeddings / HuggingFace
-* **LLM:** OpenAI GPT-3.5/4 / Llama 2
+* **Vector Store:** FAISS (Facebook AI Similarity Search)
+* **Embeddings:** HuggingFace (`all-MiniLM-L6-v2`)
+* **LLM (Inference):** Meta Llama 3.1 8B (via Groq LPU)
 
 ## 📂 Project Structure
 
 ```bash
 Fin_ChatBot_RAG/
 │
-├── annual_report.pdf    # The knowledge base (Financial Report)
+├── venv/                # Virtual Environment
 ├── app.py               # Main application logic (UI + RAG pipeline)
-├── .env                 # API keys (not committed)
-├── requirements.txt     # Python dependencies
+├── .env                 # API keys (strictly git-ignored)
 └── README.md            # Project documentation
 ```
 
@@ -55,23 +54,26 @@ source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
-If a `requirements.txt` is missing, you can install the standard stack:
+Install the required packages:
 
 ```bash
-pip install streamlit langchain openai faiss-cpu pypdf python-dotenv tiktoken
+pip install streamlit langchain langchain-community langchain-groq langchain-text-splitters faiss-cpu pypdf python-dotenv sentence-transformers
 ```
 
 ### 4. Configure Environment Variables
 Create a `.env` file in the root directory to store your API keys.
 
 ```bash
+# Windows (PowerShell)
+new-item .env
+# Mac/Linux
 touch .env
 ```
 
-Add your OpenAI API key (or other model provider keys) inside the file:
+Add your Groq API key inside the file (Get one for free at [console.groq.com](https://console.groq.com)):
 
-```text
-OPENAI_API_KEY=sk-your-api-key-here
+```env
+GROQ_API_KEY=gsk_your_actual_key_here
 ```
 
 ## 🏃‍♂️ Usage
@@ -84,19 +86,28 @@ streamlit run app.py
 
 The web app should open automatically in your browser (usually at `http://localhost:8501`).
 
-1.  The app will load `annual_report.pdf` on startup.
-2.  Type your question in the chat input (e.g., *"What was the total revenue for 2023?"*).
-3.  The bot will retrieve relevant chunks and generate an answer.
+1.  **Upload:** Drag and drop your `annual_report.pdf` into the sidebar.
+2.  **Process:** Click the "Process" button and wait for the "System Ready" signal.
+3.  **Chat:** Type your question in the input box (e.g., *"What are the top 3 risks mentioned?"*).
+4.  **Verify:** Expand the "View Source Documents" dropdown to see the exact text chunks the AI used.
 
 ## 🧠 How It Works
 
-1.  **Load:** The PDF is loaded using `PyPDFLoader`.
-2.  **Split:** Text is split into smaller chunks (e.g., 1000 characters) to fit into the context window.
-3.  **Embed:** Chunks are converted into vector embeddings.
-4.  **Store:** Embeddings are stored in a local Vector Database.
-5.  **Retrieve:** User queries are embedded, and the DB searches for the most similar text chunks.
-6.  **Generate:** The LLM receives the question + relevant chunks to formulate an answer.
+1.  **Ingestion:** The PDF is parsed using `PyPDF2` to extract raw text.
+2.  **Chunking:** Text is split into smaller, meaningful chunks (e.g., 1000 characters) to fit the LLM's context window.
+3.  **Embedding:** Chunks are converted into vector representations using the `HuggingFace` model.
+4.  **Indexing:** Vectors are stored in a local `FAISS` index for millisecond-latency retrieval.
+5.  **Retrieval:** When you ask a question, the system searches for the most similar text chunks.
+6.  **Generation:** Llama 3 receives your question + the retrieved chunks to formulate a factual answer.
 
+## 🔮 Future Roadmap
+
+This project is currently in the MVP phase. Planned engineering improvements include:
+
+* **Multi-Modal Parsing:** Integrating **LlamaParse** or **Unstructured.io** to extract data from financial tables and charts, allowing the bot to "see" and interpret visual data in Annual Reports.
+* **Private Deployment:** Adding an option to switch the inference backend from Groq (Cloud) to **Ollama** (Local) for air-gapped security requirements in sensitive financial environments.
+* **Containerization:** Dockerizing the application for consistent deployment across dev and prod environments.
+  
 ## 🤝 Contributing
 
 Feel free to open issues or submit pull requests if you have ideas for improvements!
