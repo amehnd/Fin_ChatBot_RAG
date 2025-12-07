@@ -15,19 +15,17 @@ from langchain_classic.chains import ConversationalRetrievalChain
 st.set_page_config(page_title="FinAgent: AI Analyst", page_icon="📈")
 load_dotenv()
 
-# Check for API Key
 if not os.getenv("GROQ_API_KEY"):
     st.error("⚠️ Error: GROQ_API_KEY not found. Check your .env file!")
     st.stop()
 
 # --- FUNCTIONS ---
 
-
 def stream_parser(text: str):
     """Generator function that yields chunks of text for the typewriter effect"""
     for word in text.split(" "):
         yield word + " "
-        time.sleep(0.02) # Adjust this speed (0.02 is fast, 0.05 is slow)
+        time.sleep(0.02) 
 
 
 def get_pdf_text(pdf_docs):
@@ -48,8 +46,8 @@ def get_text_chunks(text):
     return chunks
 
 def get_vectorstore(text_chunks):
-    # Downloads a small, free embedding model (all-MiniLM-L6-v2) to your machine
-    # This runs LOCALLY on your CPU (no API cost)
+    # Downloads a small, free embedding model (all-MiniLM-L6-v2) to my machine
+    # This runs LOCALLY on my CPU (no API cost)
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
     return vectorstore
@@ -61,16 +59,15 @@ def get_conversation_chain(vectorstore):
         temperature=0
     )
     
-    # THE FIX: Added output_key='answer'
     memory = ConversationBufferMemory(
         memory_key='chat_history', 
         return_messages=True,
-        output_key='answer' # <--- This tells it to only save the answer text
+        output_key='answer'
     )
     
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
-        # We limit to k=2 to prevent token overflow (The previous error)
+        # limited to k=2 to prevent token overflow 
         retriever=vectorstore.as_retriever(search_kwargs={"k": 2}), 
         memory=memory,
         return_source_documents=True
@@ -82,10 +79,10 @@ def main():
     st.sidebar.title("📈 FinAgent")
     st.sidebar.info("Upload your Annual Report to chat with it.")
     
-    # 1. Upload
+    # Upload
     pdf_docs = st.sidebar.file_uploader("Upload PDF", accept_multiple_files=True)
     
-    # 2. Process
+    # Process
     if st.sidebar.button("Process Data"):
         if not pdf_docs:
             st.warning("Please upload a PDF first.")
@@ -97,7 +94,7 @@ def main():
                 st.session_state.conversation = get_conversation_chain(vectorstore)
                 st.success("System Ready! Ask your questions.")
 
-    # 3. Chat Area
+    # Chat Area
     st.header("Financial Insight Dashboard")
     
     # Initialize chat history if not exists
@@ -117,25 +114,26 @@ def main():
 
         if 'conversation' in st.session_state:
             with st.chat_message("assistant"):
-                # 1. Show a temporary "Thinking..." spinner
+               # Show a temporary "Thinking..." spinner using strealit - Version 0 but I want it to show partial streaming
                 with st.spinner("Thinking..."):
                     response = st.session_state.conversation({'question': prompt})
                     answer = response['answer']
                     sources = response['source_documents']
                 
-                # 2. Stream the answer (The "Typewriter" Effect)
+                # Streaming the answer (The "Typewriter" Effect) - like Gemini or ChatGPT
                 st.write_stream(stream_parser(answer))
                 
-                # 3. Show Sources (The Proof)
+                # Show Sources - Verison 0 (Still needs to be updated) 
                 with st.expander("View Source Documents"):
                     for i, doc in enumerate(sources):
                         st.markdown(f"**Source {i+1}:**")
                         st.info(doc.page_content[:300] + "...")
                         
-            # 4. Save to history
+            #Save to history
             st.session_state.messages.append({"role": "assistant", "content": answer})
         else:
             st.warning("Please upload and process a PDF first.")
 
 if __name__ == '__main__':
+
     main()
